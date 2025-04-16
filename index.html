@@ -222,4 +222,64 @@
             // Update Chart.js
             const ctxAnggaran = document.getElementById('anggaranChart').getContext('2d');
             new Chart(ctxAnggaran, {
-                type: 'bar
+                type: 'bar',
+                data: dataAnggaran,
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function (value) {
+                                    return 'Rp ' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            const ctxProgres = document.getElementById('progresChart').getContext('2d');
+            new Chart(ctxProgres, {
+                type: 'bar',
+                data: dataProgres,
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function (value) {
+                                    return value.toFixed(2) + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            const ctxPaguRealisasi = document.getElementById('paguRealisasiChart').getContext('2d');
+            new Chart(ctxPaguRealisasi, {
+                type: 'bar',
+                data: dataPaguRealisasi,
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function (value) {
+                                    return 'Rp ' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Memanggil fungsi untuk load data
+        loadCSVData();
+    </script>
+</body>
+</html>
