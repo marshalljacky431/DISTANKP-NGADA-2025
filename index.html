@@ -2,53 +2,70 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dashboard Penyerapan Anggaran</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard Analitic Penyerapan Anggaran DISTANKP 2025</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
   <style>
     body {
-      background-color: #f4f6f9;
-      font-family: "Segoe UI", sans-serif;
+      background-color: #f8f9fa;
+      font-family: 'Segoe UI', sans-serif;
     }
 
     h1 {
-      margin: 40px 0 20px;
+      margin: 40px 0 30px;
       text-align: center;
-      font-weight: 700;
       color: #2c3e50;
+      font-weight: 700;
     }
 
     .chart-card {
-      background: #fff;
-      border-radius: 16px;
+      background: #ffffff;
       padding: 30px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
       margin-bottom: 40px;
     }
 
     footer {
       text-align: center;
-      padding: 20px;
-      font-size: 0.9rem;
-      color: #999;
+      padding: 30px;
+      color: #777;
+    }
+
+    a {
+      color: #198754;
+      font-weight: 600;
+    }
+
+    a:hover {
+      text-decoration: underline;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Dashboard Penyerapan Anggaran</h1>
+
     <div class="chart-card">
+      <h5 class="text-center mb-4">Pagu vs Realisasi</h5>
       <canvas id="paguChart"></canvas>
     </div>
+
     <div class="chart-card">
+      <h5 class="text-center mb-4">Progres Penyerapan</h5>
       <canvas id="progresChart"></canvas>
+    </div>
+
+    <div class="chart-card">
+      <h5 class="text-center mb-4">Sisa Anggaran</h5>
+      <canvas id="sisaChart"></canvas>
     </div>
   </div>
 
   <footer>
-    &copy; 2025 - DISTANKP NGADA | <a href="https://github.com/marshalljacky431/DISTANKP-NGADA-2025" target="_blank">GitHub</a>
+    &copy; 2025 - DISTANKP NGADA | <a href="https://github.com/marshalljacky431/DISTANKP-NGADA-2025" target="_blank">GitHub Repo</a>
   </footer>
 
   <script>
@@ -59,34 +76,37 @@
       return parseFloat(clean) || 0;
     }
 
+    function parsePercentage(value) {
+      return parseFloat(value.toString().replace("%", "")) || 0;
+    }
+
     function loadCSVData() {
       Papa.parse(csvUrl, {
         download: true,
-        header: false,
+        header: true,
+        skipEmptyLines: true,
         delimiter: ";",
         complete: function(results) {
-          const raw = results.data;
-          const cleanData = raw.slice(1).filter(row => row.length >= 3);
+          const data = results.data;
+          const labels = data.map(row => row["Bidang"]);
+          const pagu = data.map(row => parseCurrency(row["Pagu Anggaran"]));
+          const realisasi = data.map(row => parseCurrency(row["Realisasi Anggaran"]));
+          const sisa = data.map(row => parseCurrency(row["Sisa Anggaran"]));
+          const progres = data.map(row => parsePercentage(row["Progres"]));
 
-          const labels = cleanData.map(row => row[0]);
-          const pagu = cleanData.map(row => parseCurrency(row[1]));
-          const realisasi = cleanData.map(row => parseCurrency(row[2]));
-          const progres = realisasi.map((val, i) => ((val / pagu[i]) * 100).toFixed(2));
-
-          renderChart(labels, pagu, realisasi, progres);
+          renderCharts(labels, pagu, realisasi, progres, sisa);
         },
         error: function(err) {
-          console.error("CSV load error:", err);
+          console.error("Gagal memuat CSV:", err);
         }
       });
     }
 
-    function renderChart(labels, pagu, realisasi, progres) {
-      const paguChart = document.getElementById("paguChart").getContext("2d");
-      new Chart(paguChart, {
+    function renderCharts(labels, pagu, realisasi, progres, sisa) {
+      new Chart(document.getElementById("paguChart"), {
         type: "bar",
         data: {
-          labels: labels,
+          labels,
           datasets: [
             {
               label: "Pagu Anggaran",
@@ -105,7 +125,7 @@
           plugins: {
             tooltip: {
               callbacks: {
-                label: ctx => "Rp " + ctx.raw.toLocaleString()
+                label: ctx => "Rp " + Number(ctx.raw).toLocaleString()
               }
             }
           },
@@ -113,25 +133,22 @@
             y: {
               beginAtZero: true,
               ticks: {
-                callback: value => "Rp " + value.toLocaleString()
+                callback: value => "Rp " + Number(value).toLocaleString()
               }
             }
           }
         }
       });
 
-      const progresChart = document.getElementById("progresChart").getContext("2d");
-      new Chart(progresChart, {
+      new Chart(document.getElementById("progresChart"), {
         type: "bar",
         data: {
-          labels: labels,
-          datasets: [
-            {
-              label: "Progres Penyerapan (%)",
-              data: progres,
-              backgroundColor: "#9b59b6"
-            }
-          ]
+          labels,
+          datasets: [{
+            label: "Progres (%)",
+            data: progres,
+            backgroundColor: "#9b59b6"
+          }]
         },
         options: {
           responsive: true,
@@ -147,6 +164,36 @@
               beginAtZero: true,
               ticks: {
                 callback: value => value + "%"
+              }
+            }
+          }
+        }
+      });
+
+      new Chart(document.getElementById("sisaChart"), {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [{
+            label: "Sisa Anggaran",
+            data: sisa,
+            backgroundColor: "#e67e22"
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: ctx => "Rp " + Number(ctx.raw).toLocaleString()
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: value => "Rp " + Number(value).toLocaleString()
               }
             }
           }
